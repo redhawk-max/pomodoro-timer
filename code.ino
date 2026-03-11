@@ -52,25 +52,48 @@ void setup() {
   pinMode(breakAdjBtn, INPUT_PULLUP);
   pinMode(buzzer, OUTPUT);
 }
-// ==========================
 void loop() {
+  int potValue = analogRead(potPin);          // 0–1023
+  int adjustedMinutes = map(potValue, 0, 1023, 1, 60); // 1–60 minutes
+
+  // ----- ADJUST WORK TIME -----
+  if (digitalRead(workAdjBtn) == LOW) {
+    adjusting = true;
+    workTime = adjustedMinutes;
+    timeLeft = workTime * 60;
+    displayTime(timeLeft);
+    delay(200); // simple debounce
+  }
+
+  // ----- ADJUST BREAK TIME -----
+  else if (digitalRead(breakAdjBtn) == LOW) {
+    adjusting = true;
+    breakTime = adjustedMinutes;
+    timeLeft = breakTime * 60;
+    displayTime(timeLeft);
+    delay(200);
+  }
+
+  else {
+    adjusting = false; // not adjusting, normal timer
+  }
 
   // ----- START / PAUSE -----
-  if (digitalRead(startBtn) == LOW) {
+  if (!adjusting && digitalRead(startBtn) == LOW) {
     running = !running;
-    delay(300); // debounce
+    delay(300);
   }
 
   // ----- RESET -----
-  if (digitalRead(resetBtn) == LOW) {
+  if (!adjusting && digitalRead(resetBtn) == LOW) {
     running = false;
     workMode = true;
-    timeLeft = WORK_TIME;
+    timeLeft = workTime * 60;
     delay(300);
   }
 
   // ----- TIMER -----
-  if (running) {
+  if (!adjusting && running) {
     if (millis() - lastTick >= 1000) {
       lastTick = millis();
       timeLeft--;
@@ -78,17 +101,17 @@ void loop() {
       if (timeLeft <= 0) {
         tone(buzzer, 2000, 500);
 
-        // Switch mode
         if (workMode == true) {
           workMode = false;
-          timeLeft = BREAK_TIME;
+          timeLeft = breakTime * 60;
         } else {
           workMode = true;
-          timeLeft = WORK_TIME;
+          timeLeft = workTime * 60;
         }
       }
     }
   }
+
 
   // ----- DISPLAY -----
   displayTime(timeLeft);
