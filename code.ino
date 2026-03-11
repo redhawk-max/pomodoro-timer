@@ -13,7 +13,10 @@ int digPins[4] = {10, 11, 12, 13};
 // Inputs / Outputs
 int startBtn = A0;
 int resetBtn = A1;
-int buzzer   = A2;
+int workAdjBtn = A2;
+int breakAdjBtn = A3;
+int potPin = A4;
+int buzzer = A5;
 
 // ===== DIGIT BITMASK MAP =====
 byte digitMap[10] = {
@@ -31,25 +34,24 @@ byte digitMap[10] = {
 
 // ===== STATE VARIABLES =====
 unsigned long lastTick = 0;
-int timeLeft = WORK_TIME;
+int workTime = 25;  // default minutes
+int breakTime = 5;  // default minutes
+int timeLeft = workTime * 60;
 bool running = false;
 bool workMode = true;
+bool adjusting = false; // true when changing times
 
 // ==========================
 void setup() {
-  for (int i = 0; i < 8; i++) {
-    pinMode(segPins[i], OUTPUT);
-  }
-
-  for (int i = 0; i < 4; i++) {
-    pinMode(digPins[i], OUTPUT);
-  }
+  for (int i = 0; i < 8; i++) pinMode(segPins[i], OUTPUT);
+  for (int i = 0; i < 4; i++) pinMode(digPins[i], OUTPUT);
 
   pinMode(startBtn, INPUT_PULLUP);
   pinMode(resetBtn, INPUT_PULLUP);
+  pinMode(workAdjBtn, INPUT_PULLUP);
+  pinMode(breakAdjBtn, INPUT_PULLUP);
   pinMode(buzzer, OUTPUT);
 }
-
 // ==========================
 void loop() {
 
