@@ -1,75 +1,100 @@
 #include <Arduino.h>
-// ===== CONFIG =====
-#define WORK_TIME 1500   // 25 min
-#define BREAK_TIME 300   // 5 min
-#define COMMON_CATHODE true  // set false if common anode
+// ===== CONFIGURATION =====
+#define WORK_TIME 1500   // 25 minutes
+#define BREAK_TIME 300   // 5 minutes
+#define COMMON_CATHODE true
 
-// Segment pins a b c d e f g dp
-int segPins[8] = {2,3,4,5,6,7,8,9};
-// Digit pins D1 D2 D3 D4
-int digPins[4] = {10,11,12,13};
+// Segment pins: a b c d e f g dp
+int segPins[8] = {2, 3, 4, 5, 6, 7, 8, 9};
 
+// Digit select pins: D1 D2 D3 D4
+int digPins[4] = {10, 11, 12, 13};
+
+// Inputs / Outputs
 int startBtn = A0;
 int resetBtn = A1;
-int buzzer = A2;
+int buzzer   = A2;
 
-// Digit patterns (0–9)
-byte digits[10][7] = {
-  {1,1,1,1,1,1,0}, // 0
-  {0,1,1,0,0,0,0}, // 1
-  {1,1,0,1,1,0,1}, // 2
-  {1,1,1,1,0,0,1}, // 3
-  {0,1,1,0,0,1,1}, // 4
-  {1,0,1,1,0,1,1}, // 5
-  {1,0,1,1,1,1,1}, // 6
-  {1,1,1,0,0,0,0}, // 7
-  {1,1,1,1,1,1,1}, // 8
-  {1,1,1,1,0,1,1}  // 9
+// ===== DIGIT BITMASK MAP =====
+byte digitMap[10] = {
+  0b0111111, // 0
+  0b0000110, // 1
+  0b1011011, // 2
+  0b1001111, // 3
+  0b1100110, // 4
+  0b1101101, // 5
+  0b1111101, // 6
+  0b0000111, // 7
+  0b1111111, // 8
+  0b1101111  // 9
 };
 
+// ===== STATE VARIABLES =====
 unsigned long lastTick = 0;
 int timeLeft = WORK_TIME;
 bool running = false;
 bool workMode = true;
 
-// ==================
+// ==========================
 void setup() {
-  for(int i=0;i<8;i++) pinMode(segPins[i], OUTPUT);
-  for(int i=0;i<4;i++) pinMode(digPins[i], OUTPUT);
+  for (int i = 0; i < 8; i++) {
+    pinMode(segPins[i], OUTPUT);
+  }
+
+  for (int i = 0; i < 4; i++) {
+    pinMode(digPins[i], OUTPUT);
+  }
 
   pinMode(startBtn, INPUT_PULLUP);
   pinMode(resetBtn, INPUT_PULLUP);
   pinMode(buzzer, OUTPUT);
 }
 
+// ==========================
 void loop() {
-  if (!digitalRead(startBtn)) {
+
+  // ----- START / PAUSE -----
+  if (digitalRead(startBtn) == LOW) {
     running = !running;
-    delay(300);
+    delay(300); // debounce
   }
 
-  if (!digitalRead(resetBtn)) {
+  // ----- RESET -----
+  if (digitalRead(resetBtn) == LOW) {
     running = false;
     workMode = true;
     timeLeft = WORK_TIME;
     delay(300);
   }
 
-  if (running && millis() - lastTick >= 1000) {
-    lastTick = millis();
-    timeLeft--;
+  // ----- TIMER -----
+  if (running) {
+    if (millis() - lastTick >= 1000) {
+      lastTick = millis();
+      timeLeft--;
 
-    if (timeLeft <= 0) {
-      tone(buzzer, 2000, 500);
-      workMode = !workMode;
-      timeLeft = workMode ? WORK_TIME : BREAK_TIME;
+      if (timeLeft <= 0) {
+        tone(buzzer, 2000, 500);
+
+        // Switch mode
+        if (workMode == true) {
+          workMode = false;
+          timeLeft = BREAK_TIME;
+        } else {
+          workMode = true;
+          timeLeft = WORK_TIME;
+        }
+      }
     }
   }
 
+  // ----- DISPLAY -----
   displayTime(timeLeft);
 }
 
-// ===== DISPLAY =====
+// ==========================
+// DISPLAY FUNCTIONS
+// ==========================
 void displayTime(int seconds) {
   int mins = seconds / 60;
   int secs = seconds % 60;
@@ -81,21 +106,37 @@ void displayTime(int seconds) {
     secs % 10
   };
 
-  for (int d=0; d<4; d++) {
+  for (int d = 0; d < 4; d++) {
     setDigit(d, nums[d]);
-    delay(2);
+    delay(2);  // multiplex timing
   }
 }
 
+// ==========================
 void setDigit(int d, int num) {
-  for(int i=0;i<4;i++)
-    digitalWrite(digPins[i], COMMON_CATHODE ? HIGH : LOW);
 
-  digitalWrite(digPins[d], COMMON_CATHODE ? LOW : HIGH);
+  // Turn all digits OFF
+  for (int i = 0; i < 4; i++) {
+    if (COMMON_CATHODE)
+      digitalWrite(digPins[i], HIGH);
+    else
+      digitalWrite(digPins[i], LOW);
+  }
 
-  for(int s=0;s<7;s++)
-    digitalWrite(segPins[s],
-      digits[num][s] ? (COMMON_CATHODE ? HIGH : LOW)
-                     : (COMMON_CATHODE ? LOW : HIGH)
-    );
+  // Enable selected digit
+  if (COMMON_CATHODE)
+    digitalWrite(digPins[d], LOW);
+  else
+    digitalWrite(digPins[d], HIGH);
+
+  // Set segments using bitmask
+  for (int s = 0; s < 7; s++) {
+    bool on = digitMap[num] & (1 << s);
+
+    if (on) {
+      digitalWrite(segPins[s], COMMON_CATHODE ? HIGH : LOW);
+    } else {
+      digitalWrite(segPins[s], COMMON_CATHODE ? LOW : HIGH);
+    }
+  }
 }
