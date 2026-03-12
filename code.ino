@@ -1,5 +1,5 @@
 #define COMMON_CATHODE true
-
+#include <Arduino.h>
 // Segment pins: a b c d e f g dp
 int segPins[8] = {2, 3, 4, 5, 6, 7, 8, 9};
 // Digit select pins: D1 D2 D3 D4
