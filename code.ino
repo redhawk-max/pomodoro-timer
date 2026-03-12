@@ -1,5 +1,5 @@
 #define COMMON_CATHODE true
-#include <Arduino.h>
+
 // Segment pins: a b c d e f g dp
 int segPins[8] = {2, 3, 4, 5, 6, 7, 8, 9};
 // Digit select pins: D1 D2 D3 D4
@@ -99,6 +99,34 @@ void updateLED() {
     }
   }
 }
+void clearDisplay() {
+  for (int i = 0; i < 4; i++)
+    digitalWrite(digPins[i], COMMON_CATHODE ? HIGH : LOW);
+  for (int s = 0; s < 7; s++)
+    digitalWrite(segPins[s], COMMON_CATHODE ? LOW : HIGH);
+}
+void setDigit(int d, int num) {
+  // Turn all digits OFF
+  for (int i = 0; i < 4; i++)
+    digitalWrite(digPins[i], COMMON_CATHODE ? HIGH : LOW);
+  // Enable selected digit
+  digitalWrite(digPins[d], COMMON_CATHODE ? LOW : HIGH);
+  // Set segments
+  for (int s = 0; s < 7; s++) {
+    bool on = digitMap[num] & (1 << s);
+    digitalWrite(segPins[s], on ? (COMMON_CATHODE ? HIGH : LOW)
+                                : (COMMON_CATHODE ? LOW  : HIGH));
+  }
+}
+void displayTime(int seconds) {
+  int mins    = seconds / 60;
+  int secs    = seconds % 60;
+  int nums[4] = { mins / 10, mins % 10, secs / 10, secs % 10 };
+  for (int d = 0; d < 4; d++) {
+    setDigit(d, nums[d]);
+    delay(2);
+  }
+}
 
 // ==========================
 void loop() {
@@ -181,39 +209,5 @@ void loop() {
     if (millis() - flashStart >= 300) flashDisplay = false;
   } else {
     displayTime(timeLeft);
-  }
-}
-
-// ==========================
-// DISPLAY FUNCTIONS
-// ==========================
-void clearDisplay() {
-  for (int i = 0; i < 4; i++)
-    digitalWrite(digPins[i], COMMON_CATHODE ? HIGH : LOW);
-  for (int s = 0; s < 7; s++)
-    digitalWrite(segPins[s], COMMON_CATHODE ? LOW : HIGH);
-}
-
-void displayTime(int seconds) {
-  int mins    = seconds / 60;
-  int secs    = seconds % 60;
-  int nums[4] = { mins / 10, mins % 10, secs / 10, secs % 10 };
-  for (int d = 0; d < 4; d++) {
-    setDigit(d, nums[d]);
-    delay(2);
-  }
-}
-
-void setDigit(int d, int num) {
-  // Turn all digits OFF
-  for (int i = 0; i < 4; i++)
-    digitalWrite(digPins[i], COMMON_CATHODE ? HIGH : LOW);
-  // Enable selected digit
-  digitalWrite(digPins[d], COMMON_CATHODE ? LOW : HIGH);
-  // Set segments
-  for (int s = 0; s < 7; s++) {
-    bool on = digitMap[num] & (1 << s);
-    digitalWrite(segPins[s], on ? (COMMON_CATHODE ? HIGH : LOW)
-                                : (COMMON_CATHODE ? LOW  : HIGH));
   }
 }
