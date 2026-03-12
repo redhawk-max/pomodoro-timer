@@ -13,10 +13,10 @@ int digPins[4] = {10, 11, 12, 13};
 // Inputs / Outputs
 int startBtn = A0;
 int resetBtn = A1;
-int workAdjBtn = A2;
-int breakAdjBtn = A3;
-int potPin = A4;
-int buzzer = A5;
+int buzzer   = A2;
+int potPin   = A3;
+int modeBtn  = A4;
+int modeLED  = A5;
 
 // ===== DIGIT BITMASK MAP =====
 byte digitMap[10] = {
@@ -34,24 +34,27 @@ byte digitMap[10] = {
 
 // ===== STATE VARIABLES =====
 unsigned long lastTick = 0;
-int workTime = 25;  // default minutes
-int breakTime = 5;  // default minutes
-int timeLeft = workTime * 60;
+int workTime  = 1500;   // default 25 min
+int breakTime = 300;    // default 5 min
+int timeLeft  = 1500;
 bool running = false;
-bool workMode = true;
-bool adjusting = false; // true when changing times
+bool workMode = true;    // current running mode
+bool editWork = true;    // editing mode
 
 // ==========================
 void setup() {
-  for (int i = 0; i < 8; i++) pinMode(segPins[i], OUTPUT);
-  for (int i = 0; i < 4; i++) pinMode(digPins[i], OUTPUT);
-
+  for (int i = 0; i < 8; i++)
+    pinMode(segPins[i], OUTPUT);
+  for (int i = 0; i < 4; i++)
+    pinMode(digPins[i], OUTPUT);
   pinMode(startBtn, INPUT_PULLUP);
   pinMode(resetBtn, INPUT_PULLUP);
-  pinMode(workAdjBtn, INPUT_PULLUP);
-  pinMode(breakAdjBtn, INPUT_PULLUP);
+  pinMode(modeBtn, INPUT_PULLUP);
   pinMode(buzzer, OUTPUT);
+  pinMode(modeLED, OUTPUT);
+  pinMode(potPin, INPUT);
 }
+
 void loop() {
   int potValue = analogRead(potPin);          // 0–1023
   int adjustedMinutes = map(potValue, 0, 1023, 1, 60); // 1–60 minutes
