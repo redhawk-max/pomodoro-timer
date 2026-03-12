@@ -56,115 +56,103 @@ void setup() {
 }
 
 void loop() {
-  int potValue = analogRead(potPin);          // 0–1023
-  int adjustedMinutes = map(potValue, 0, 1023, 1, 60); // 1–60 minutes
-
-  // ----- ADJUST WORK TIME -----
-  if (digitalRead(workAdjBtn) == LOW) {
-    adjusting = true;
-    workTime = adjustedMinutes;
-    timeLeft = workTime * 60;
-    displayTime(timeLeft);
-    delay(200); // simple debounce
+  // ===== MODE BUTTON (EDGE DETECTION) =====
+  static bool lastModeState = HIGH;
+  bool currentModeState = digitalRead(modeBtn);
+  if (lastModeState == HIGH && currentModeState == LOW && !running) {
+    editWork = !editWork;
+    // Immediately show correct time
+    if (editWork)
+      timeLeft = workTime;
+    else
+      timeLeft = breakTime;
   }
-
-  // ----- ADJUST BREAK TIME -----
-  else if (digitalRead(breakAdjBtn) == LOW) {
-    adjusting = true;
-    breakTime = adjustedMinutes;
-    timeLeft = breakTime * 60;
-    displayTime(timeLeft);
-    delay(200);
+  lastModeState = currentModeState;
+  // ===== LED INDICATOR =====
+  digitalWrite(modeLED, editWork ? HIGH : LOW);
+  // ===== POTENTIOMETER EDITING =====
+  if (!running) {
+    int potValue = analogRead(potPin);
+    int minutes = map(potValue, 0, 1023, 1, 60);
+    int seconds = minutes * 60;
+    if (editWork) {
+      workTime = seconds;
+      timeLeft = workTime;
+    } else {
+      breakTime = seconds;
+      timeLeft = breakTime;
+    }
   }
-
-  else {
-    adjusting = false; // not adjusting, normal timer
-  }
-
-  // ----- START / PAUSE -----
-  if (!adjusting && digitalRead(startBtn) == LOW) {
+  // ===== START / PAUSE BUTTON =====
+  if (digitalRead(startBtn) == LOW) {
     running = !running;
     delay(300);
   }
-
-  // ----- RESET -----
-  if (!adjusting && digitalRead(resetBtn) == LOW) {
+  // ===== RESET BUTTON =====
+  if (digitalRead(resetBtn) == LOW) {
     running = false;
     workMode = true;
-    timeLeft = workTime * 60;
+    editWork = true;
+    timeLeft = workTime;
     delay(300);
   }
-
-  // ----- TIMER -----
-  if (!adjusting && running) {
+  // ===== TIMER COUNTDOWN =====
+  if (running) {
     if (millis() - lastTick >= 1000) {
       lastTick = millis();
       timeLeft--;
-
       if (timeLeft <= 0) {
         tone(buzzer, 2000, 500);
-
-        if (workMode == true) {
+        // Switch running mode
+        if (workMode) {
           workMode = false;
-          timeLeft = breakTime * 60;
+          timeLeft = breakTime;
         } else {
           workMode = true;
-          timeLeft = workTime * 60;
+          timeLeft = workTime;
         }
       }
     }
   }
 
-
   // ----- DISPLAY -----
   displayTime(timeLeft);
 }
 
+  // ===== DISPLAY =====
+  displayTime(timeLeft);
+}
 // ==========================
 // DISPLAY FUNCTIONS
 // ==========================
 void displayTime(int seconds) {
   int mins = seconds / 60;
   int secs = seconds % 60;
-
   int nums[4] = {
     mins / 10,
     mins % 10,
     secs / 10,
     secs % 10
   };
-
   for (int d = 0; d < 4; d++) {
     setDigit(d, nums[d]);
-    delay(2);  // multiplex timing
+    delay(2);
   }
 }
-
 // ==========================
 void setDigit(int d, int num) {
-
   // Turn all digits OFF
   for (int i = 0; i < 4; i++) {
-    if (COMMON_CATHODE)
-      digitalWrite(digPins[i], HIGH);
-    else
-      digitalWrite(digPins[i], LOW);
+    digitalWrite(digPins[i], COMMON_CATHODE ? HIGH : LOW);
   }
-
   // Enable selected digit
-  if (COMMON_CATHODE)
-    digitalWrite(digPins[d], LOW);
-  else
-    digitalWrite(digPins[d], HIGH);
-
-  // Set segments using bitmask
+  digitalWrite(digPins[d], COMMON_CATHODE ? LOW : HIGH);
+  // Set segments
   for (int s = 0; s < 7; s++) {
     bool on = digitMap[num] & (1 << s);
-
-    if (on) {
+    if (on)
       digitalWrite(segPins[s], COMMON_CATHODE ? HIGH : LOW);
-    } else {
+    else
       digitalWrite(segPins[s], COMMON_CATHODE ? LOW : HIGH);
-    }
   }
 }
