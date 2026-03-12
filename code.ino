@@ -1,8 +1,10 @@
 #define COMMON_CATHODE true
+#include <Arduino.h>
 // Segment pins: a b c d e f g dp
 int segPins[8] = {2, 3, 4, 5, 6, 7, 8, 9};
 // Digit select pins: D1 D2 D3 D4
 int digPins[4] = {10, 11, 12, 13};
+
 // Inputs / Outputs
 int startBtn = A0;
 int resetBtn = A1;
@@ -25,19 +27,23 @@ byte digitMap[10] = {
   0b1101111  // 9
 };
 
-// ===== STATE VARIABLES =====
-unsigned long lastTick    = 0;
-unsigned long lastBlink   = 0;   // for break-mode LED blinking
-bool          ledState    = LOW; // tracks blink state
-bool          flashDisplay = false;
-unsigned long flashStart  = 0;
+// ===== DEFAULTS =====
+const int DEFAULT_WORK  = 1500; // 25 min
+const int DEFAULT_BREAK = 300;  // 5 min
 
-int  workTime  = 1500;  // default 25 min
-int  breakTime = 300;   // default 5 min
-int  timeLeft  = 1500;
+// ===== STATE VARIABLES =====
+unsigned long lastTick     = 0;
+unsigned long lastBlink    = 0;
+unsigned long flashStart   = 0;
+bool          ledState     = LOW;
+bool          flashDisplay = false;
+
+int  workTime  = DEFAULT_WORK;
+int  breakTime = DEFAULT_BREAK;
+int  timeLeft  = DEFAULT_WORK;
 bool running   = false;
 bool workMode  = true;  // current running mode
-bool editWork  = true;  // editing mode
+bool editWork  = true;  // which timer is being edited
 
 // ==========================
 void setup() {
@@ -58,17 +64,17 @@ void switchMode(bool toWork) {
   workMode = toWork;
   timeLeft = toWork ? workTime : breakTime;
 
-  // ── Distinct buzzer patterns ──────────────────────────────
+  // Distinct buzzer patterns
   if (toWork) {
-    // Break → Work: two short high beeps  (get back to it!)
+    // Break → Work: two short high beeps
     tone(buzzer, 2200, 150); delay(200);
     tone(buzzer, 2200, 150); delay(200);
   } else {
-    // Work → Break: one long low beep  (relax)
+    // Work → Break: one long low beep
     tone(buzzer, 1000, 600); delay(650);
   }
 
-  // ── Flash display blank for 300 ms ───────────────────────
+  // Flash display blank for 300 ms
   flashDisplay = true;
   flashStart   = millis();
 }
@@ -76,7 +82,7 @@ void switchMode(bool toWork) {
 // ==========================
 void updateLED() {
   if (!running) {
-    // While stopped: solid = editing work time, off = editing break time
+    // Solid = editing work, OFF = editing break
     digitalWrite(modeLED, editWork ? HIGH : LOW);
     return;
   }
@@ -102,7 +108,14 @@ void loop() {
   bool currentModeState = digitalRead(modeBtn);
   if (lastModeState == HIGH && currentModeState == LOW && !running) {
     editWork = !editWork;
-    timeLeft = editWork ? workTime : breakTime;
+    // Snap to default and preview it
+    if (editWork) {
+      workTime = DEFAULT_WORK;
+      timeLeft = DEFAULT_WORK;
+    } else {
+      breakTime = DEFAULT_BREAK;
+      timeLeft  = DEFAULT_BREAK;
+    }
   }
   lastModeState = currentModeState;
 
@@ -116,10 +129,10 @@ void loop() {
     int seconds  = minutes * 60;
     if (editWork) {
       workTime = seconds;
-      timeLeft = workTime;
+      timeLeft = workTime;   // preview work time on display
     } else {
       breakTime = seconds;
-      timeLeft  = breakTime;
+      timeLeft  = breakTime; // preview break time on display
     }
   }
 
@@ -127,8 +140,14 @@ void loop() {
   static bool lastStartState = HIGH;
   bool currentStartState = digitalRead(startBtn);
   if (lastStartState == HIGH && currentStartState == LOW) {
+    if (!running) {
+      // Always begin a fresh session from work mode
+      workMode = true;
+      editWork = true;
+      timeLeft = workTime;
+      lastTick = millis();
+    }
     running = !running;
-    if (running) lastTick = millis(); // resync tick on resume
   }
   lastStartState = currentStartState;
 
@@ -136,11 +155,11 @@ void loop() {
   static bool lastResetState = HIGH;
   bool currentResetState = digitalRead(resetBtn);
   if (lastResetState == HIGH && currentResetState == LOW) {
-    running   = false;
-    workMode  = true;
-    editWork  = true;
-    timeLeft  = workTime;
-    ledState  = LOW;
+    running      = false;
+    workMode     = true;
+    editWork     = true;
+    timeLeft     = workTime;
+    ledState     = LOW;
     flashDisplay = false;
   }
   lastResetState = currentResetState;
@@ -151,14 +170,13 @@ void loop() {
       lastTick = millis();
       timeLeft--;
       if (timeLeft <= 0) {
-        switchMode(!workMode);   // flip between work / break
+        switchMode(!workMode); // flip between work / break
       }
     }
   }
 
   // ===== DISPLAY =====
   if (flashDisplay) {
-    // Blank all segments during flash window
     clearDisplay();
     if (millis() - flashStart >= 300) flashDisplay = false;
   } else {
@@ -177,8 +195,8 @@ void clearDisplay() {
 }
 
 void displayTime(int seconds) {
-  int mins   = seconds / 60;
-  int secs   = seconds % 60;
+  int mins    = seconds / 60;
+  int secs    = seconds % 60;
   int nums[4] = { mins / 10, mins % 10, secs / 10, secs % 10 };
   for (int d = 0; d < 4; d++) {
     setDigit(d, nums[d]);
