@@ -7,8 +7,6 @@ Users can configure:
 
 * Work session duration
 * Break session duration
-* Number of Pomodoro cycles
-
 The timer automatically switches between work and break modes and stops after the configured number of sessions.
 
 ---
@@ -78,8 +76,8 @@ You can create a wiring diagram using:
 | ------------------ | ------------------------------------------ |
 | Start              | Start / pause timer                        |
 | Reset              | Stop timer and return to work mode         |
-| Mode (short press) | Switch between editing work and break time |
-| Mode (long press)  | Edit Pomodoro session count                |
+| Mode | Switch between editing work and break time |
+
 
 ---
 
@@ -102,7 +100,6 @@ The potentiometer is used to adjust values depending on the active editing mode.
 | ------------- | ------------------------- |
 | Edit Work     | Work duration             |
 | Edit Break    | Break duration            |
-| Edit Sessions | Number of Pomodoro cycles |
 
 ---
 
