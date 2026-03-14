@@ -246,4 +246,4 @@ This project is released under the MIT License.
 # Author
 
 Your Name
-GitHub: https://github.com/yourusername
+GitHub: [https://github.com/yourusername](https://github.com/redhawk-max)
