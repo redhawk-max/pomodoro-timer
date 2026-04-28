@@ -1,249 +1,97 @@
-# Arduino Pomodoro Timer ⏱️
+# Pomodoro Timer using Arduino Uno
 
-A hardware Pomodoro timer built with an **Arduino Uno**, a **4-digit 7-segment display**, and a **simple button interface**.
-The device helps users manage productivity sessions using the **Pomodoro Technique** by alternating between work and break periods.
+## Overview
 
-Users can configure:
+This project is a Pomodoro timer implemented using an Arduino Uno. It allows configurable work and break durations using a potentiometer and provides real-time countdown display on a 4-digit 7-segment display. The system includes buzzer alerts and LED indicators for session transitions.
 
-* Work session duration
-* Break session duration
-The timer automatically switches between work and break modes and stops after the configured number of sessions.
+A custom PCB was designed and mounted directly on top of the Arduino Uno to integrate all external components into a compact form factor.
 
 ---
 
-# Project Overview
+## Features
 
-The Pomodoro Technique improves productivity by dividing work into focused intervals separated by short breaks.
-
-Typical cycle:
-
-Work → Break → Work → Break → Repeat
-
-This project implements that workflow using a microcontroller and simple hardware components.
-
-Features include:
-
-* Adjustable work timer (1–60 minutes)
-* Adjustable break timer (1–60 minutes)
-* Adjustable number of Pomodoro sessions
-* Real-time countdown using a multiplexed 7-segment display
-* Buzzer alerts for session transitions
-* LED indicator for work/break state
-* Long-press button input for session editing
-* Automatic stop after all sessions complete
+- Configurable work and break durations using potentiometer
+- Start and reset functionality using push buttons
+- Automatic switching between work and break sessions
+- Buzzer notifications for session changes
+- LED status indicator for current mode
+- Real-time countdown display (MM:SS format)
+- Multiplexed 4-digit 7-segment display control
+- Custom PCB mounted on Arduino Uno
 
 ---
 
-# Hardware Components
+## Hardware Used
 
-| Component                 | Purpose                   |
-| ------------------------- | ------------------------- |
-| Arduino Uno               | Main microcontroller      |
-| 4-digit 7-segment display | Shows countdown timer     |
-| Potentiometer             | Adjust timer values       |
-| Push buttons (3)          | Start, Reset, Mode        |
-| Passive buzzer            | Session transition alerts |
-| LED                       | Mode indicator            |
-| Resistors                 | Current limiting          |
-| Breadboard & jumper wires | Prototyping               |
+- Arduino Uno
+- 4-digit 7-segment display (common cathode)
+- Potentiometer (10kΩ)
+- Push buttons (Start, Reset, Mode)
+- Active buzzer
+- LED indicator
+- Resistors (220Ω for segments and LED)
+- Custom PCB (Arduino Uno shield-style mount)
 
 ---
 
-# Wiring Diagram
+## PCB Design
 
-Add a wiring diagram or circuit photo here.
+The custom PCB is designed as a shield that mounts directly on top of the Arduino Uno. It connects all peripherals including the display, buttons, potentiometer, buzzer, and LED into a single integrated board.
 
-Example:
+### PCB Top View
+![PCB Top View](images/pcb_top_view.jpg)
 
-```
-images/wiring_diagram.png
-```
-
-You can create a wiring diagram using:
-
-* Fritzing
-* Tinkercad
-* KiCad
-* hand-drawn diagram
+### Assembled System
+![Assembled Board](images/assembled_board.jpg)
 
 ---
 
-# System Behavior
+## Pin Mapping
 
-### Button Controls
+### Segment Display
+- D2 → a
+- D3 → b
+- D4 → c
+- D5 → d
+- D6 → e
+- D7 → f
+- D8 → g
+- D9 → dp
 
-| Button             | Function                                   |
-| ------------------ | ------------------------------------------ |
-| Start              | Start / pause timer                        |
-| Reset              | Stop timer and return to work mode         |
-| Mode | Switch between editing work and break time |
+### Digit Control
+- D10 → Digit 1
+- D11 → Digit 2
+- D12 → Digit 3
+- D13 → Digit 4
 
-
----
-
-### LED Indicator
-
-| State            | Meaning            |
-| ---------------- | ------------------ |
-| LED ON           | Work session       |
-| LED blinking     | Break session      |
-| LED solid (idle) | Editing work time  |
-| LED off (idle)   | Editing break time |
-
----
-
-### Potentiometer Control
-
-The potentiometer is used to adjust values depending on the active editing mode.
-
-| Mode          | Adjusts                   |
-| ------------- | ------------------------- |
-| Edit Work     | Work duration             |
-| Edit Break    | Break duration            |
+### Inputs / Outputs
+- A0 → Start Button
+- A1 → Reset Button
+- A2 → Buzzer
+- A3 → Potentiometer
+- A4 → Mode Button
+- A5 → Mode LED
 
 ---
 
-# Display Format
+## How It Works
 
-The 7-segment display shows the countdown in **MM:SS format**.
-
-Example:
-
-```
-25:00 → Work session
-05:00 → Break session
-```
-
-When editing sessions, the display shows:
-
-```
-0004
-```
-
-Meaning **4 Pomodoro cycles**.
+1. User sets work or break duration using potentiometer
+2. Mode button switches between work and break configuration
+3. Start button begins countdown
+4. Timer alternates automatically between work and break sessions
+5. Buzzer signals transitions
+6. LED indicates current mode
+7. Display shows remaining time in MM:SS format
 
 ---
 
-# Software Design
+## Project Structure
+/src
+main.ino
 
-The firmware is written in **Arduino C++** and uses several embedded-systems concepts:
+/images
+pcb_top_view.jpg
+assembled_board.jpg
 
-### Multiplexed Display Control
-
-The four digits of the display are refreshed rapidly to create the appearance of a continuous display.
-
-### Non-blocking Timing
-
-Timing is controlled using `millis()` instead of delay loops, allowing the system to handle:
-
-* button input
-* LED blinking
-* display refresh
-* timer countdown
-
-### State Logic
-
-The program tracks several states:
-
-* editing work time
-* editing break time
-* editing session count
-* running work session
-* running break session
-
-### Session Tracking
-
-Each completed work period increments a session counter.
-When the configured number of sessions is reached, the timer stops automatically.
-
----
-
-# Repository Structure
-
-```
-arduino-pomodoro-timer
-│
-├── code
-│   └── pomodoro_timer.ino
-│
-├── images
-│   ├── wiring_diagram.png
-│   ├── circuit_photo.jpg
-│   └── finished_device.jpg
-│
-├── README.md
-└── LICENSE
-```
-
----
-
-# Demo
-
-Add photos or videos of the device running.
-
-Example:
-
-```
-images/finished_device.jpg
-```
-
-Recommended demo photos:
-
-* breadboard wiring
-* timer running
-* close-up of display
-* final assembled device
-
----
-
-# How to Run
-
-1. Connect the hardware components according to the wiring diagram.
-2. Open the Arduino sketch:
-
-```
-code/pomodoro_timer.ino
-```
-
-3. Upload the program to the Arduino Uno using the Arduino IDE.
-4. Power the device and configure your timer.
-
----
-
-# Skills Demonstrated
-
-This project demonstrates experience in:
-
-* Embedded systems programming
-* Arduino development
-* Digital electronics
-* Hardware interfacing
-* Multiplexed display control
-* User input handling
-* State-based firmware design
-
----
-
-# Future Improvements
-
-Possible upgrades include:
-
-* OLED or LCD display
-* Rotary encoder instead of potentiometer
-* Battery-powered portable design
-* Enclosure / 3D printed case
-* Persistent settings stored in EEPROM
-* Bluetooth mobile app integration
-
----
-
-# License
-
-This project is released under the MIT License.
-
----
-
-# Author
-
-Your Name
-GitHub: [rehan_2](https://github.com/redhawk-max)
+README.md
